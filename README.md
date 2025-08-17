@@ -1,19 +1,36 @@
-# 目录结构
-- create_data: 创建数据 Python 脚本
-- data: 生成的原始数据
-- pipelines: ZenML Pipeline Python 脚本
-- steps: ZenML Step Python 脚本
-- configs: ZenML Config Python 脚本
-- run.py: ZenML Pipeline 运行脚本
-- models: 生成的 ZenML Model
-- test: 测试脚本
-- docs: 一些文档
+# Directory Structure
+
+- `create_data`: Python scripts for creating data
+- `data`: Generated raw data
+- `pipelines`: Python scripts for ZenML Pipelines
+- `steps`: Python scripts for ZenML Steps
+- `configs`: Python scripts for ZenML Configs
+- `run.py`: Script for running ZenML Pipelines
+- `models`: Generated ZenML Models
+- `test`: Test scripts
+- `docs`: Some documentation
 
 
 
-```bash
-# Python Version 3.12
-pip install -r requirements.txt
-python run.py
-```
+# Operation steps
 
+1. Make sure the Python version is 3.12, then install dependencies
+
+   ```
+   pip install -r requirements.txt
+   ```
+
+2. Generate training data. The generated data is saved in the `data` directory
+
+   ```
+   cd create_data
+   python create_cpu_timestamp_data.py
+   ```
+
+3. Run the training model script
+
+   ```
+   python run.py
+   ```
+
+   
