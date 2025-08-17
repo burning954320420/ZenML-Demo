@@ -27,7 +27,11 @@
    python create_cpu_timestamp_data.py
    ```
 
-3. Run the training model script
+3. Login to ZenML Server. 
+
+   https://docs.zenml.io/deploying-zenml/connecting-to-zenml/connect-with-a-service-account
+
+4. Run the training model script
 
    ```
    python run.py
