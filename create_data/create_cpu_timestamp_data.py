@@ -236,4 +236,4 @@ class CPUDataGenerator:
 
 if __name__ == "__main__":
     generator = CPUDataGenerator(start_date='2024-01-01', end_date='2024-07-01', freq='1min')
-    df = generator.generate_dataset('../data/cpu_data_timestamp.csv', '../data/cpu_data_timestamp.txt')
+    df = generator.generate_dataset('../data/cpu_data_timestamp_test.csv', '../data/cpu_data_timestamp_test.txt')

@@ -204,7 +204,8 @@ class CPUFeatureEngineer:
 def predict_anomalies(
     test_csv_path: str,
     model_dir: str,
-    output_csv_path: str
+    output_csv_path: str,
+    threshold: float = 0.5
 ):
     """
     推理函数：加载模型，预测异常，输出结果
@@ -213,6 +214,7 @@ def predict_anomalies(
         test_csv_path: 测试集路径（CSV，含 timestamp, cpu_utilization）
         model_dir: 模型目录（含 final_model.pkl, scaler, feature_names）
         output_csv_path: 输出路径
+        threshold: 自定义阈值（默认0.5），用于判定异常的概率阈值
     """
     print(f"🚀 开始推理任务...")
     print(f"📁 测试集: {test_csv_path}")
@@ -263,10 +265,26 @@ def predict_anomalies(
     X_scaled = scaler.transform(X)
 
     # 6. 预测
-    y_pred = model.predict(X_scaled)  # 0: 正常, 1: 异常
+    if hasattr(model, 'predict_proba'):
+        # 如果模型支持概率预测
+        y_proba = model.predict_proba(X_scaled)[:, 1]  # 获取异常类的概率
+        y_pred = (y_proba >= threshold).astype(int)  # 应用自定义阈值
+        print(f"ℹ️  使用自定义阈值 {threshold} 进行异常判定")
+        print(f"ℹ️  预测概率范围: min={y_proba.min():.2f}, max={y_proba.max():.2f}")
+        # 验证是否有概率低于阈值却被标记为异常的情况
+        invalid_mask = (y_proba < threshold) & (y_pred == 1)
+        if invalid_mask.any():
+            print(f"⚠️  发现 {invalid_mask.sum()} 条数据概率低于阈值但被标记为异常！")
+    else:
+        # 不支持概率预测的模型
+        y_pred = model.predict(X_scaled)  # 0: 正常, 1: 异常
+        print(f"⚠️  模型不支持概率预测，使用默认预测结果")
 
-    # 7. 构造输出
+    # 7. 构造输出（转换为 Unix 时间戳）
     output_df = df[['timestamp', 'cpu_utilization']].copy()
+    # 将 timestamp 转换为 Unix 时间戳（整数秒）
+    if not pd.api.types.is_numeric_dtype(output_df['timestamp']):
+        output_df['timestamp'] = pd.to_datetime(output_df['timestamp']).astype('int64') // 10**9
     output_df['is_anomaly'] = y_pred.astype(int)
 
     # ✅ 再次确保 CPU 保留 2 位小数
@@ -274,21 +292,18 @@ def predict_anomalies(
 
     # 8. 保存结果
     os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
-    output_df.to_csv(output_csv_path, index=False, float_format='%.1f')
+    output_df.to_csv(output_csv_path, index=False, float_format='%.2f')
     print(f"✅ 推理完成！结果已保存至: {output_csv_path}")
     print(f"📊 总数据点: {len(y_pred)}, 异常点: {y_pred.sum()} ({y_pred.mean():.2%})")
 
     return output_df
 
-
-# ======================
-# 使用示例
-# ======================
 if __name__ == "__main__":
     # ✅ 配置路径
-    TEST_CSV = "../data/cpu_data_timestamp.csv"           # 输入测试集
+    TEST_CSV = "../data/data_20_percent.csv"           # 输入测试集
     MODEL_DIR = "../models/"                    # 模型文件夹
     OUTPUT_CSV = "../output/anomalies.csv"      # 输出结果
+    THRESHOLD = 0.75  # 自定义阈值
 
     # 运行推理
-    result = predict_anomalies(TEST_CSV, MODEL_DIR, OUTPUT_CSV)
+    result = predict_anomalies(TEST_CSV, MODEL_DIR, OUTPUT_CSV, threshold=THRESHOLD)
